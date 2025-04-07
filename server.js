@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const session = require("express-session"); // 세션 추가
 const passport = require("./config/passport"); // Passport 설정 가져오기
 const authRoutes = require("./routes/auth"); // 네이버 로그인 라우트 추가
+const User = require("./models/User");  // User 모델 불러오기
+require('dotenv').config(); // dotenv 설정
 
 const app = express();
 

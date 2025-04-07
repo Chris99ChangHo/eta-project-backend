@@ -5,25 +5,26 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const passport = require("passport");
 
-// 회원가입 API
+// ✅ 회원가입 API
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
-    // 이미 존재하는 이메일인지 확인
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "이미 가입된 이메일입니다." });
     }
 
-    // 비밀번호 해시 처리
     const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      provider: "local",
+    });
 
-    // 새 사용자 생성
-    const newUser = new User({ name, email, password: hashedPassword });
     await newUser.save();
 
-    // 토큰 생성
     const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
@@ -43,13 +44,12 @@ router.post("/register", async (req, res) => {
   }
 });
 
-
-// 로그인 API
+// ✅ 로그인 API
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, provider: "local" });
     if (!user) {
       return res.status(400).json({ message: "이메일 또는 비밀번호가 올바르지 않습니다." });
     }
@@ -76,10 +76,23 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Naver 로그인
+// ✅ 네이버 로그인 시작
 router.get("/naver", passport.authenticate("naver"));
-router.get("/naver/callback", passport.authenticate("naver", { failureRedirect: "/" }),
-  (req, res) => res.redirect("/dashboard")
+
+// ✅ 네이버 로그인 콜백 (⚠️ 경로 수정!)
+router.get(
+  "/naver/callback",
+  passport.authenticate("naver", {
+    failureRedirect: "/login",
+    session: false,
+  }),
+  (req, res) => {
+    const user = req.user;
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+
+    // 프론트엔드로 리다이렉트 (예시: http://localhost:3000/naver-success?token=...)
+    res.redirect(`http://localhost:3000/naver-success?token=${token}`);
+  }
 );
 
 /* 
