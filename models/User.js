@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema({
       return this.provider === "local";
     },
     minlength: 6,
-    select: false, // 기본 조회 시 비밀번호 제외
+    select: false,
   },
   provider: {
     type: String,
@@ -32,6 +32,11 @@ const UserSchema = new mongoose.Schema({
   naverId: {
     type: String,
     default: null,
+  },
+  role: {
+    type: String,
+    enum: ["user", "admin"],
+    default: "user", // 일반 유저는 기본값이 user
   },
   createdAt: {
     type: Date,

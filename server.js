@@ -1,23 +1,28 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const session = require("express-session"); // 세션 추가
-const passport = require("./config/passport"); // Passport 설정 가져오기
-const authRoutes = require("./routes/auth"); // 네이버 로그인 라우트 추가
-const User = require("./models/User");  // User 모델 불러오기
-const instagramRoutes = require('./routes/instagram'); // Instagram API 라우트 추가
-const boardRoutes = require('./routes/board'); // 게시판 라우트 추가
-const mediaRoutes = require("./routes/media"); // 미디어 라우트 추가
+const session = require("express-session");
+const passport = require("./config/passport");
+const path = require("path");
+const dotenv = require("dotenv");
 
-require("dotenv").config(); // .env 파일 불러오기
+dotenv.config(); // .env 설정
+
+// 모델 & 라우트 임포트
+const User = require("./models/User");
+const authRoutes = require("./routes/auth");
+const instagramRoutes = require("./routes/instagram");
+const boardRoutes = require("./routes/board");
+const mediaRoutes = require("./routes/media");
+const userRoutes = require("./routes/user"); // ✅ /api/me 라우트
 
 const app = express();
 
-// ✅ 미들웨어 설정
+// ✅ 미들웨어
 app.use(cors());
 app.use(express.json());
 
-// ✅ 세션 설정 (Passport 사용하려면 필요함)
+// ✅ 세션 + 패스포트
 app.use(
   session({
     secret: process.env.JWT_SECRET,
@@ -25,8 +30,6 @@ app.use(
     saveUninitialized: true,
   })
 );
-
-// ✅ Passport 초기화 및 세션 사용
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -39,21 +42,15 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// ✅ 미디어 라우트
-app.use("/api/media", mediaRoutes); 
-
-// static 폴더 경로 (이미지 사용 시 필요)
-const path = require("path");
+// ✅ 정적 파일 경로 (이미지 등)
 app.use("/images", express.static(path.join(__dirname, "../client/public/images")));
 
-// ✅ 네이버 로그인 API 라우트 연결
-app.use("/api/auth", authRoutes);
-
-// ✅ 인스타그램 라우트
-app.use("/api/instagram", instagramRoutes); 
-
-// ✅ 게시판 라우트
-app.use("/api/board", boardRoutes); 
+// ✅ 라우트 연결
+app.use("/api/auth", authRoutes);         // 네이버 로그인
+app.use("/api/instagram", instagramRoutes); // 인스타그램
+app.use("/api/board", boardRoutes);         // 게시판 (✅ /api/board/...)
+app.use("/api/media", mediaRoutes);         // 이미지 업로드 등
+app.use("/api", userRoutes);                // ✅ /api/me 등 유저 정보 조회
 
 // ✅ 서버 실행
 const PORT = 3001;
